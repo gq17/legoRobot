@@ -1,0 +1,166 @@
+#define SEARCH 25 //cm, the threshold to locate a obstacle
+#define NEAR 10//cm, the threshold to near a abstacle
+
+int searchFlag=0; //change to 1 if finding the ball
+int nearFlag=0;//change to 1 if coming close to a ball
+int lenTime=0; //control the time inside the loop
+
+task search_around()
+{
+  Wait(4000);
+  while(true)// this loop is for when the obstacle is not a ball
+  { 
+    //SetSensorColorFull(IN_3);
+    //SetSensorUltrasonic(IN_4); 
+    NumOut(0, LCD_LINE4, SensorUS(IN_4));
+    while(true)//this loop is to search the ball
+    {
+      if(searchFlag == 1)
+      {
+        break;
+      }
+      repeat(180)
+      {
+        OnFwd(OUT_A, 20);
+        OnRev(OUT_C, 20);
+        Wait(100);
+        Off(OUT_AC);
+        if(searchFlag == 1)
+        {
+          break;
+        }
+      }
+      if(searchFlag == 1)
+      {
+        break;
+      }
+      OnFwd(OUT_AC, 80);
+      Wait(2000);
+      Off(OUT_AC);
+    }
+    Off(OUT_AC);
+
+    // go to the ball
+    while(true)
+    {
+      OnFwd(OUT_AC, 20);
+      Wait(100);
+      if(nearFlag == 1)
+      {
+        break;
+      }
+      lenTime = lenTime + 1;
+      if(lenTime > 50)
+      {
+         break;
+      }
+    }
+    if(lenTime > 50)
+    {
+      lenTime=0;
+      //continue;
+    }
+
+    //grab the ball and check
+    OnFwd(OUT_AC,20);
+    Wait(1000);
+    OnRev(OUT_B, 25);
+    Wait(4000);
+    Off(OUT_B);
+    if(SENSOR_3 == 5)
+    {
+      //send it back and we are done
+      ClearSensor(IN_3);
+      TextOut(20, LCD_LINE3, "Lockdown successed!");
+      Off(OUT_AC);
+      break; //jump out of the loop
+    }
+    else
+    {
+      //go to another place and repeat the searching process
+      searchFlag=0;
+      nearFlag=0;
+      Off(OUT_AC);
+      OnFwd(OUT_B,50);  //release the arms
+      Wait(2000);
+      Off(OUT_B);
+      OnRev(OUT_AC, 50);
+      Wait(4000);
+      Off(OUT_AC);
+      OnFwd(OUT_A,50);
+      Wait(3000);
+      Off(OUT_A);
+      OnFwd(OUT_AC, 50);
+      Wait(2000);
+      Off(OUT_AC);
+      ClearSensor(IN_3);
+      ClearSensor(IN_4);
+    }
+   
+  }
+}
+
+task check_dist()
+{
+  while(true)
+  {
+    if(SensorUS(IN_4) <= SEARCH)
+    {
+      TextOut(20, LCD_LINE3, "searched");
+      ClearSensor(IN_4);
+      searchFlag = 1;
+    }
+    else
+    {
+      searchFlag = 0;
+    }
+    if(SensorUS(IN_4) <= NEAR)
+    {
+      TextOut(20, LCD_LINE3, "near");
+      ClearSensor(IN_4);
+      nearFlag = 1;
+    }
+    else
+    {
+      nearFlag=0;
+    }
+  }
+}
+
+//distance between the robor and the ball
+//int dist_Ball;
+
+task main()
+{
+  //The interfaces of motors
+  //A:left  B:middle C:right
+  
+  //The interfaces of sensors
+  //IN_1:TOUCH  IN_2: Color IN_3:   IN_4:Ultrasonic
+
+
+  //First step: searching the ball with the ultrasonic and color sensor
+  
+  Precedes(search_around, check_dist); //searching while turning and forwarding
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+  
+  
+   
+  /*
+  //Second step: turning and measuring the distance with the ultrasonic sensor
+  SetSensorLowspeed(IN_4);
+  dist_Ball = SensorUS(IN_4);
+  OnFwd(OUT_AC, 50);
+  Wait(4000);  //the time needs to be calculated with the distance
+  Off(OUT_AC);
+
+  //Third step: fetching the ball with the touch sensor
+  SetSensor(IN_1, SENSOR_TOUCH);
+  OnFwd(OUT_AC, 75);
+  Off(OUT_AC);
+
+  //Fourth step: Sending the ball to predefined place with the color sensor
+
+  */
+}
