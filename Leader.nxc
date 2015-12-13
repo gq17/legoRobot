@@ -1,18 +1,18 @@
 #define SEARCH 25 //cm, the threshold to locate a obstacle
 #define NEAR 10//cm, the threshold to near a abstacle
 
-#define time_repeat 180
-#define speed_turn1  30
-#define time_turn1  100
-#define speed_forward1 20
-#define time_forward1  2000
-#define speed_forward2 20
-#define time_forward2  200
-#define speed_forward3 20
-#define time_forward3  2000
-#define speed_back 30
-#define time_back  4000   
-#define speed_turn2 20
+#define time_repeat 80  //circle
+#define speed_turn1  30  //circle
+#define time_turn1  150  //circle
+#define speed_forward1 40  //forward after circle
+#define time_forward1  5000 //forward after circle
+#define speed_forward2 20  //approaching
+#define time_forward2  200 //approaching
+#define speed_forward3 30  //after approaching
+#define time_forward3  4000 //after approaching
+#define speed_back 40  //backoff if no reslut
+#define time_back  6000    //backoff if no result
+#define speed_turn2 30
 #define time_turn2  3000
 
 int searchFlag=0; //change to 1 if finding the ball
@@ -24,7 +24,8 @@ inline void go_back()
   int count = 0;
   while(true)
   {
-    if(count > 8)
+    NumOut(0, LCD_LINE2, SENSOR_1);
+    if(count > 50)
     {
       while(true)
       {
@@ -33,7 +34,7 @@ inline void go_back()
            TextOut(20, LCD_LINE3, "return!");
            break;
         }
-        OnFwd(OUT_AC, 20);
+        OnFwd(OUT_AC, 40);
         Wait(1000);
         Off(OUT_AC);
       }
@@ -45,8 +46,13 @@ inline void go_back()
        OnRev(OUT_AC, 30);
        Wait(2000);
        Off(OUT_AC);
+       //make a turn
+       OnFwd(OUT_A, 30);
+       OnRev(OUT_C, 30);
+       Wait(2000);
+       Off(OUT_AC);
     }
-    OnFwd(OUT_AC, 20);
+    OnFwd(OUT_AC, 40);
     Wait(1000);
     Off(OUT_AC);
     count = count+1;
@@ -73,6 +79,10 @@ task search_around()
         Off(OUT_AC);
         if(searchFlag == 1)
         {
+          OnRev(OUT_A, 20);
+          OnFwd(OUT_C, 20);
+          Wait(1000);
+          Off(OUT_AC);
           break;
         }
       }
@@ -86,7 +96,7 @@ task search_around()
     }
 
     // go to the ball
-    while(true)
+   /* while(true)
     {
       OnFwd(OUT_AC, speed_forward2);
       Wait(time_forward2);
@@ -103,13 +113,13 @@ task search_around()
     if(lenTime > 50)
     {
       lenTime=0;
-    }
+    }*/
 
     //grab the ball and check
     OnFwd(OUT_AC,speed_forward3);
     Wait(time_forward3);
     Off(OUT_AC);
-    OnRev(OUT_B, 10);//do not release the motor
+    OnRev(OUT_B, 20);//do not release the motor
     Wait(4000);
     if(SENSOR_3 == 5)
     {
@@ -177,8 +187,8 @@ task main()
   //The interfaces of sensors
   //IN_1:TOUCH  IN_2: Color IN_3:   IN_4:Ultrasonic
   
-  OnFwd(OUT_AC, 20);
-  Wait(10000);
+  OnFwd(OUT_AC, 30);
+  Wait(5000);
   Off(OUT_AC);
   Precedes(search_around, check_dist); //searching while turning and forwarding
   SetSensorColorFull(IN_3);
