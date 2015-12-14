@@ -1,0 +1,203 @@
+#define SEARCH 25 //cm, the threshold to locate a obstacle
+#define NEAR 10//cm, the threshold to near a abstacle
+
+#define speed_forward0  40  //cross the half field
+#define time_forward0 30000  //cross the half field
+#define time_repeat 65  //circle
+#define speed_turn1  30  //circle
+#define time_turn1  150  //circle
+#define speed_forward1 40  //forward after circle
+#define time_forward1  4000 //forward after circle
+//#define speed_forward2 20  //approaching
+//#define time_forward2  200 //approaching
+#define speed_forward3 30  //after approaching
+#define time_forward3  3500 //after approaching
+#define speed_back 40  //backoff if no reslut
+#define time_back  6000    //backoff if no result
+#define speed_turn2 40  // turn after backoff
+#define time_turn2  4000  // turn after backoff
+
+int searchFlag=0; //change to 1 if finding the ball
+int nearFlag=0;//change to 1 if coming close to a ball
+int lenTime=0; //control the time inside the loop
+
+inline void go_back()
+{
+  int count = 0;
+  int count2 = 0;
+  while(true)
+  {
+    NumOut(0, LCD_LINE2, SENSOR_2);
+    if(count > 25) //finding the right direction
+    {
+      while(true)
+      {
+        if((SENSOR_1 == 1)||(SENSOR_2 == 1)) //return to the start point
+        {
+           TextOut(20, LCD_LINE3, "return!");
+           break;
+        }
+        OnFwd(OUT_AC, 40);
+        Wait(2000);
+        Off(OUT_AC);
+      }
+      break;
+    }
+    if((SENSOR_1 == 1)||(SENSOR_2 == 1))
+    {
+       count = 0;
+       OnRev(OUT_AC, 30);
+       Wait(2000);
+       Off(OUT_AC);
+       //make a turn
+       OnFwd(OUT_A, 30);
+       OnRev(OUT_C, 30);
+       Wait(2000);
+       Off(OUT_AC);
+    }
+    OnFwd(OUT_AC, 40);
+    Wait(2000);
+    Off(OUT_AC);
+    count = count+1;
+    count2 = count2+1;
+  }   
+}
+
+task search_around()
+{
+  Wait(2000);
+  while(true)// this loop is for when the obstacle is not a ball
+  {  
+    NumOut(0, LCD_LINE4, SensorUS(IN_4));
+    while(true)//this loop is to search the ball
+    {
+      if(searchFlag == 1)
+      {
+        break;
+      }
+      repeat(time_repeat)
+      {
+        OnRev(OUT_A, speed_turn1);
+        OnFwd(OUT_C, speed_turn1);
+        Wait(time_turn1);
+        Off(OUT_AC);
+        if(searchFlag == 1)
+        {
+          OnRev(OUT_A, 20);
+          OnFwd(OUT_C, 20);
+          Wait(1000);
+          Off(OUT_AC);
+          break;
+        }
+      }
+      if(searchFlag == 1)
+      {
+        break;
+      }
+      OnFwd(OUT_AC, speed_forward1);
+      Wait(time_forward1);
+      Off(OUT_AC);
+    }
+
+    // go to the ball
+   /* while(true)
+    {
+      OnFwd(OUT_AC, speed_forward2);
+      Wait(time_forward2);
+      if(nearFlag == 1)
+      {
+        break;
+      }
+      lenTime = lenTime + 1;
+      if(lenTime > 50)
+      {
+         break;
+      }
+    }
+    if(lenTime > 50)
+    {
+      lenTime=0;
+    }*/
+
+    //grab the ball and check
+    OnFwd(OUT_AC,speed_forward3);
+    Wait(time_forward3);
+    Off(OUT_AC);
+    OnRev(OUT_B, 20);//do not release the motor
+    Wait(4000);
+    if(SENSOR_3 == 5)
+    {
+      //send it back and we are done
+      TextOut(20, LCD_LINE3, "Lockdown successed!");
+      go_back();
+      break; 
+    }
+    else
+    {
+      //go to another place and repeat the searching process
+      searchFlag=0;
+      nearFlag=0;
+      OnFwd(OUT_B,50);  //release the arms
+      Wait(2000);
+      Off(OUT_B);
+      OnRev(OUT_AC, speed_back);
+      Wait(time_back);
+      Off(OUT_AC);
+      OnFwd(OUT_A, speed_turn2);
+      OnRev(OUT_C, speed_turn2);
+      Wait(time_turn2);
+      Off(OUT_AC);
+      OnFwd(OUT_AC, 20);
+      Wait(2000);
+      Off(OUT_AC);
+    }
+   
+  }
+}
+
+
+task check_dist()
+{
+  while(true)
+  {
+    if(SensorUS(IN_4) <= SEARCH)
+    {
+      TextOut(20, LCD_LINE3, "searched");
+      ClearSensor(IN_4);
+      searchFlag = 1;
+    }
+    else
+    {
+      searchFlag = 0;
+    }
+    if(SensorUS(IN_4) <= NEAR)
+    {
+      TextOut(20, LCD_LINE3, "near");
+      ClearSensor(IN_4);
+      nearFlag = 1;
+    }
+    else
+    {
+      nearFlag=0;
+    }
+  }
+}
+
+task main()
+{
+  //The interfaces of motors
+  //A:left  B:middle C:right
+  
+  //The interfaces of sensors
+  //IN_1:TOUCH  IN_2:  IN_3: color   IN_4:Ultrasonic
+  
+  OnFwd(OUT_AC, speed_forward0);
+  Wait(time_forward0);
+  Off(OUT_AC);
+  Precedes(search_around, check_dist); //searching while turning and forwarding
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+  SetSensorTouch(IN_1);
+  SetSensorTouch(IN_2);
+ 
+}

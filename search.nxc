@@ -1,19 +1,21 @@
 #define SEARCH 25 //cm, the threshold to locate a obstacle
 #define NEAR 10//cm, the threshold to near a abstacle
 
-#define time_repeat 80  //circle
+#define speed_forward0  50  //cross the half field
+#define time_forward0 25000  //cross the half field
+#define time_repeat 65  //circle
 #define speed_turn1  30  //circle
 #define time_turn1  150  //circle
 #define speed_forward1 40  //forward after circle
-#define time_forward1  5000 //forward after circle
-#define speed_forward2 20  //approaching
-#define time_forward2  200 //approaching
+#define time_forward1  4000 //forward after circle
+//#define speed_forward2 20  //approaching
+//#define time_forward2  200 //approaching
 #define speed_forward3 30  //after approaching
-#define time_forward3  4000 //after approaching
+#define time_forward3  3500 //after approaching
 #define speed_back 40  //backoff if no reslut
 #define time_back  6000    //backoff if no result
-#define speed_turn2 30
-#define time_turn2  3000
+#define speed_turn2 40  // turn after backoff
+#define time_turn2  4000  // turn after backoff
 
 int searchFlag=0; //change to 1 if finding the ball
 int nearFlag=0;//change to 1 if coming close to a ball
@@ -22,25 +24,26 @@ int lenTime=0; //control the time inside the loop
 inline void go_back()
 {
   int count = 0;
+  int count2 = 0;
   while(true)
   {
-    NumOut(0, LCD_LINE2, SENSOR_1);
-    if(count > 50)
+    NumOut(0, LCD_LINE2, SENSOR_2);
+    if(count > 18) //finding the right direction
     {
       while(true)
       {
-        if(SENSOR_1 == 1)
+        if((SENSOR_1 == 1)||(SENSOR_2 == 1)) //return to the start point
         {
            TextOut(20, LCD_LINE3, "return!");
            break;
         }
-        OnFwd(OUT_AC, 40);
-        Wait(1000);
+        OnFwd(OUT_AC, 60);
+        Wait(2000);
         Off(OUT_AC);
       }
       break;
     }
-    if(SENSOR_1 == 1)
+    if((SENSOR_1 == 1)||(SENSOR_2 == 1))
     {
        count = 0;
        OnRev(OUT_AC, 30);
@@ -52,10 +55,11 @@ inline void go_back()
        Wait(2000);
        Off(OUT_AC);
     }
-    OnFwd(OUT_AC, 40);
-    Wait(1000);
+    OnFwd(OUT_AC, 50);
+    Wait(2000);
     Off(OUT_AC);
     count = count+1;
+    count2 = count2+1;
   }   
 }
 
@@ -185,14 +189,15 @@ task main()
   //A:left  B:middle C:right
   
   //The interfaces of sensors
-  //IN_1:TOUCH  IN_2: Color IN_3:   IN_4:Ultrasonic
+  //IN_1:TOUCH  IN_2:  IN_3: color   IN_4:Ultrasonic
   
-  OnFwd(OUT_AC, 30);
-  Wait(5000);
+  OnFwd(OUT_AC, speed_forward0);
+  Wait(time_forward0);
   Off(OUT_AC);
   Precedes(search_around, check_dist); //searching while turning and forwarding
   SetSensorColorFull(IN_3);
   SetSensorUltrasonic(IN_4);
   SetSensorTouch(IN_1);
+  SetSensorTouch(IN_2);
  
 }
