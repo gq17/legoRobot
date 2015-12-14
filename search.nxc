@@ -2,20 +2,20 @@
 #define NEAR 10//cm, the threshold to near a abstacle
 
 #define speed_forward0  50  //cross the half field
-#define time_forward0 25000  //cross the half field
-#define time_repeat 65  //circle
+#define time_forward0 20000  //cross the half field
+#define time_repeat 60  //circle
 #define speed_turn1  30  //circle
 #define time_turn1  150  //circle
-#define speed_forward1 40  //forward after circle
-#define time_forward1  4000 //forward after circle
+#define speed_forward1 30  //forward after circle
+#define time_forward1  6000 //forward after circle
 //#define speed_forward2 20  //approaching
 //#define time_forward2  200 //approaching
 #define speed_forward3 30  //after approaching
 #define time_forward3  3500 //after approaching
 #define speed_back 40  //backoff if no reslut
-#define time_back  6000    //backoff if no result
-#define speed_turn2 40  // turn after backoff
-#define time_turn2  4000  // turn after backoff
+#define time_back  4000    //backoff if no result
+#define speed_turn2 30  // turn after backoff
+#define time_turn2  3000  // turn after backoff
 
 int searchFlag=0; //change to 1 if finding the ball
 int nearFlag=0;//change to 1 if coming close to a ball
@@ -28,7 +28,7 @@ inline void go_back()
   while(true)
   {
     NumOut(0, LCD_LINE2, SENSOR_2);
-    if(count > 18) //finding the right direction
+    if(count > 12) //finding the right direction
     {
       while(true)
       {
@@ -37,7 +37,8 @@ inline void go_back()
            TextOut(20, LCD_LINE3, "return!");
            break;
         }
-        OnFwd(OUT_AC, 60);
+        //OnFwd(OUT_AC, 60);
+        OnFwdReg(OUT_AC, 60, OUT_REGMODE_SYNC);
         Wait(2000);
         Off(OUT_AC);
       }
@@ -47,15 +48,16 @@ inline void go_back()
     {
        count = 0;
        OnRev(OUT_AC, 30);
-       Wait(2000);
+       Wait(3000);
        Off(OUT_AC);
        //make a turn
-       OnFwd(OUT_A, 30);
-       OnRev(OUT_C, 30);
-       Wait(2000);
+       OnFwd(OUT_A, 40);
+       OnRev(OUT_C, 40);
+       Wait(3500);
        Off(OUT_AC);
     }
-    OnFwd(OUT_AC, 50);
+    //OnFwd(OUT_AC, 50);
+    OnFwdReg(OUT_AC, 50, OUT_REGMODE_SYNC);
     Wait(2000);
     Off(OUT_AC);
     count = count+1;
@@ -94,7 +96,8 @@ task search_around()
       {
         break;
       }
-      OnFwd(OUT_AC, speed_forward1);
+      //OnFwd(OUT_AC, speed_forward1);
+      OnFwdReg(OUT_AC, speed_forward1, OUT_REGMODE_SYNC);
       Wait(time_forward1);
       Off(OUT_AC);
     }
@@ -140,7 +143,8 @@ task search_around()
       OnFwd(OUT_B,50);  //release the arms
       Wait(2000);
       Off(OUT_B);
-      OnRev(OUT_AC, speed_back);
+      //OnRev(OUT_AC, speed_back);
+      OnRevReg(OUT_AC, speed_back, OUT_REGMODE_SYNC);
       Wait(time_back);
       Off(OUT_AC);
       OnFwd(OUT_A, speed_turn2);
@@ -148,7 +152,7 @@ task search_around()
       Wait(time_turn2);
       Off(OUT_AC);
       OnFwd(OUT_AC, 20);
-      Wait(2000);
+      Wait(3000);
       Off(OUT_AC);
     }
    
@@ -191,7 +195,8 @@ task main()
   //The interfaces of sensors
   //IN_1:TOUCH  IN_2:  IN_3: color   IN_4:Ultrasonic
   
-  OnFwd(OUT_AC, speed_forward0);
+  //OnFwd(OUT_AC, speed_forward0);
+  OnFwdReg(OUT_AC, speed_forward0, OUT_REGMODE_SYNC);
   Wait(time_forward0);
   Off(OUT_AC);
   Precedes(search_around, check_dist); //searching while turning and forwarding
