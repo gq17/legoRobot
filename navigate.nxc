@@ -1,0 +1,42 @@
+#define NEAR 10
+
+//navigating the arena
+
+task main()
+{
+  //The interfaces of motors
+  //A:left  B:middle C:right
+  
+  //The interfaces of sensors
+  //IN_1:TOUCH  IN_2: Color IN_3:   IN_4:Ultrasonic
+  
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+  SetSensorTouch(IN_1);
+
+  int count = 0;
+  while(true){
+     NumOut(0, LCD_LINE3, SensorUS(IN_4));
+     NumOut(0, LCD_LINE4, SENSOR_1);
+     if((SENSOR_1 == 1)||(SENSOR_4 < NEAR))
+     {
+       count = 0;
+       OnRev(OUT_AC, 40);
+       Wait(3000);
+       Off(OUT_AC);
+       OnFwd(OUT_A, 30);
+       OnRev(OUT_C, 30);
+       Wait(2500);
+       Off(OUT_AC);
+     }
+     OnFwd(OUT_AC, 40);
+     Wait(2000);
+     Off(OUT_AC);
+     count = count + 1;
+     if(count > 100)
+     {
+        break;
+     }
+  }
+
+}
