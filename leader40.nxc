@@ -1,0 +1,337 @@
+#define CONNECTION 1
+#define SERV_NAME  "eurecom-os-server"
+
+#define MSG_ACTION 0
+#define MSG_ACK    1
+#define MSG_LEAD   2
+#define MSG_START  3
+#define MSG_STOP   4
+#define MSG_WAIT   5
+#define MSG_CUSTOM 6
+
+#define SEARCH 23
+
+//current location and direction of the robot
+int x = 0;
+int y = 0;
+int d = 90;
+int findFlag = 0;
+
+inline void Turn_RightNinety()
+{
+  //to be defined
+}
+
+inline void Turn_LeftNinety()
+{
+  //to be defined
+}
+
+inline void Forward_Forty()
+{
+  RotateMotor(OUT_AC, 50, 1800);
+}
+
+inline void Turn_LeftThirty()
+{
+    //RotateMotor(OUT_AC, 50, 1890);
+}
+
+inline void Turn_RightThirty()
+{
+     //RotateMotor(OUT_AC, 50, 360);
+}
+
+inline void Go_Back(int i)
+{
+  repeat(i)
+  {
+    Turn_LeftThirty();
+  }
+  // start go back
+  x = x/40;
+  y = y/40;
+  if(d == 0)
+  {
+    Turn_RightNinety();
+  } else if(d == 90)
+  {
+    Turn_LeftNinety();
+    Turn_LeftNinety();
+  }
+  repeat(y)
+  {
+    Forward_Forty();
+  }
+
+  if(x<=0)
+  {
+    Turn_LeftNinety();
+    repeat(-x){
+      Forward_Forty();
+    }
+  }else
+  {
+    Turn_RightNinety();
+    repeat(x)
+    {
+      Forward_Forty();
+    }
+  }
+}
+
+
+inline void  Turn_LeftThirty_Check(int m, int i)
+{
+  if(SensorUS(IN_4) <= SEARCH)
+  {
+    RotateMotor(OUT_AC, 50, 360); // go to check the ball
+    OnRev(OUT_B, 20);//do not release the motor
+    Wait(4000);
+    if(SENSOR_3 == 5)
+    {
+      findFlag = 1;
+      RotateMotor(OUT_AC, 50, 360); //return
+      Go_Back(m-i);
+    }
+    else
+    {
+      findFlag = 0;
+      RotateMotor(OUT_AC, 50, 360); //return
+    }
+  }
+  RotateMotorEx(OUT_AC, 50, 180, 100, true, true);
+  d = (d + 30)%360; 
+}
+
+inline void Turn_RightThirty_Check(int m, int i)
+{
+  if(SensorUS(IN_4) <= SEARCH)
+  {
+    RotateMotor(OUT_AC, 50, 360); // go to check the ball
+    OnRev(OUT_B, 20);//do not release the motor
+    Wait(4000);
+    if(SENSOR_3 == 5)
+    {
+      findFlag = 1;
+      RotateMotor(OUT_AC, 50, 360); //return
+      Go_Back(m-i);
+    }
+    else
+    {
+      findFlag = 0;
+      RotateMotor(OUT_AC, 50, 360); //return
+    }
+  }
+  RotateMotorEx(OUT_AC, 50, 180, 100, true, true);
+  d = (d - 30)%360;  
+}
+
+task MovLead()
+{
+  int i = 0;
+ 
+  while(true)
+  {
+    //(0,0,90) 
+    repeat(9)
+    {                         
+      Forward_Forty();  //forward 40 centimeters
+      y = y + 40;
+  
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++; 
+      }
+    }
+  
+    //(0,360,90)
+    repeat(3)
+    {
+      Turn_LeftThirty();
+    }
+    Forward_Forty();
+    x = x - 40;
+    repeat(15)
+    {
+      Turn_LeftThirty();
+    }
+
+    //(-40, 360, 270)
+    repeat(9)
+    {                           
+      Forward_Forty();  //forward 40 centimeters
+      y = y - 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+  
+    //(-40, 0 270)
+    repeat(3)
+    {
+      Turn_RightThirty();
+    }
+    Forward_Forty();
+    x = x - 40;
+    repeat(15)
+    {
+      Turn_RightThirty();
+    }
+
+    //(-80, 0, 90)
+    repeat(9)
+    {
+      Forward_Forty();  //forward 40 centimeters
+      y = y + 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+
+    //(-80, 360, 90)
+    repeat(3)
+    {
+      Turn_RightThirty();
+    }
+    repeat(4)
+    {
+      Forward_Forty();  //forward 40 centimeters
+      x = x + 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+    repeat(3)
+    {
+      Turn_RightThirty();
+    }
+   
+   //(80, 360 , 270)
+    repeat(9)
+    {
+      Forward_Forty();  //forward 40 centimeters
+      y = y - 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+
+    //(80, 0, 270)
+    repeat(3)
+    {
+      Turn_RightThirty();
+    }
+    Forward_Forty();
+    x = x - 40;
+    repeat(15)
+    {
+      Turn_RightThirty();
+    }
+
+    //(40, 0, 90)
+    repeat(9)
+    {
+      Forward_Forty();  //forward 40 centimeters
+      y = y + 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+   
+    //(40, 360, 90)
+    repeat(3)
+    {
+      Turn_LeftThirty();
+    }
+    Forward_Forty();
+    x = x - 40;
+    repeat(15)
+    {
+      Turn_LeftThirty();
+    }
+    
+    //(0, 360, 270)
+    repeat(9)
+    {
+      Forward_Forty();  //forward 40 centimeters
+      y = y - 40;
+
+      i = 0;
+      repeat(12)
+      {        //turn 30 degrees for 12 times to turn a circle
+        Turn_LeftThirty_Check(12, i);
+        i++;
+      }
+    }
+    //(0,0,270)
+  }
+}
+
+//task MovFollow()
+//{
+
+//} 
+
+  //OnFwdReg(OUT_AC, 50, OUT_REGMODE_IDLE);
+  //Wait(2000);
+  //Off(OUT_AC);
+  //Wait(2000);
+  //RotateMotor(OUT_AC, 50, 360);
+  //Wait(2000);
+  //RotateMotorEx(OUT_AC, 50, 180, 100, true, true);
+  //Wait(2000);
+  //RotateMotorPID(OUT_A, 100, 180, P, I, D);
+
+task main()
+{
+  //left motor:A  right motor: C center motor: B
+  //IN_1  IN_2 IN_3: color sensor IN_4: ultrasonic sensor
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+
+  //main code
+  //first receive the rank, to decide leader or follower
+  int r_rank = 0; //test:0 leader:1  follower: >1
+  if(r_rank == 0)
+  {
+     //RotateMotor(OUT_AC, 30, 720);
+     //RotateMotorEx(OUT_AC, 50, 295, -100, true, true);
+     repeat(12)
+     {
+       RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
+       Wait(500);
+     }
+  }
+  else if(r_rank == 1)
+  {
+    //Precedes(MovLead);
+  }
+  else 
+  {
+   // Precedes(MovFollow);
+  }
+}
+
