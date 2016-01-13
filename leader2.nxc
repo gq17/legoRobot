@@ -15,12 +15,82 @@
 #define reposer Wait(2000);
 
 #define SEARCH 23
+#define forward_distance 70
+#define forward_speed    30
+
+char getMessage (byte &msg[]) {
+    until (BluetoothStatus(CONNECTION) == NO_ERR);  // Wait for connection
+    string __msg;
+    char r = ReceiveMessage(0,1,__msg);
+    if (r != 0)
+        return 0;
+
+    ArrayInit(msg,0,59);
+    StrToByteArray (__msg, msg);
+    r = ArrayLen(msg);
+    if (r < 5)
+        return 0;
+
+    return r;
+}
+
+void sendMessage (byte msg[]) {
+    CommBTWriteType args2;
+    args2.Connection = CONNECTION;
+    args2.Buffer= ByteArrayToStr (msg);
+
+    SysCommBTWrite(args2);
+    TextOut(0, LCD_LINE2,       "Trying to write");
+    while (BluetoothStatus (CONNECTION) == STAT_COMM_PENDING)
+        Wait (10);
+
+    if (BluetoothStatus (CONNECTION) == NO_ERR)
+        TextOut(0, LCD_LINE2,   "Write Done     ");
+    else
+        TextOut(0, LCD_LINE2,   "Write Failed   ");
+}
 
 //current location and direction of the robot
 int x = 0;
 int y = 0;
-int d = 90;
+int d = 0;
 int findFlag = 0;
+
+inline void Send_Msg_Ack(int dist, int speed)
+{ 
+  int i=0;
+  byte actionMsg[];
+  ArrayInit(actionMsg, 0, 10);
+  actionMsg[0] = 0x00;
+  actionMsg[1] = 0x00;
+  actionMsg[2] = 0x00;        // ID of the team
+  actionMsg[3] = 0x00;
+  actionMsg[4] = MSG_ACTION;
+
+  actionMsg[5] = d;          // angle
+  actionMsg[6] = 0x00;
+
+  actionMsg[7] = dist;          // distance
+
+  actionMsg[8] = speed;          // speed
+  actionMsg[9] = 0x00;
+
+  byte ackMsg[];
+  while(true)
+  {
+    sendMessage (actionMsg);
+    i = 0;
+    while((!getMessage(ackMsg))&&(i<10))
+    {
+      Wait(100);
+      i++;
+    }
+    if(ackMsg[4] == MSG_ACK)
+    {
+      break;
+    }
+  }
+}
 
 inline void Turn_RightNinety()
 {
@@ -36,7 +106,7 @@ inline void Turn_LeftNinety()
 
 inline void Forward_Forty()
 {
-  RotateMotor(OUT_AC, 50, 1800);
+  RotateMotor(OUT_AC, forward_speed, 1800);
 }
 
 inline void Turn_LeftThirty()
@@ -146,6 +216,7 @@ task MovLead()
     {                         
       Forward_Forty();  //forward one step
       y++;
+      Send_Msg_Ack(forward_distance, forward_speed);
   
       i = 0;
       repeat(fois_circle)
@@ -160,12 +231,14 @@ task MovLead()
     Turn_RightNinety();
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     i = 0;
     repeat(fois_circle+3)
     {
       Turn_RightThirty_Check(fois_circle+3, i);
       i++;
     }
+    Send_Msg_Ack(0, 0);
 
     //(40, 350, 270)
     reposer;
@@ -173,6 +246,7 @@ task MovLead()
     {                           
       Forward_Forty(); 
       y--;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -187,14 +261,17 @@ task MovLead()
     Turn_RightNinety();
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     i = 0;
     repeat(fois_circle+3)
     {
       Turn_RightThirty_Check(fois_circle+3, i);
       i++;
     }
+    Send_Msg_Ack(0, 0);
 
     //(-40, 0, 90)
     reposer;
@@ -202,6 +279,7 @@ task MovLead()
     {
       Forward_Forty();  
       y++;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -216,11 +294,13 @@ task MovLead()
     Turn_RightNinety();
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     repeat(fois_circle+3)
     {
       Turn_RightThirty_Check(fois_circle+3, i);
       i++;
     }
+    Send_Msg_Ack(0, 0);
 
     //(0, 350, 270)
     reposer;
@@ -228,6 +308,7 @@ task MovLead()
     {
       Forward_Forty();
       y--;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -240,10 +321,47 @@ task MovLead()
   }
 }
 
-//task MovFollow()
-//{
+task MovFollow()
+{
+  byte msg[];
+  
+  byte ackMsg[];
+  ArrayInit(ackMsg,0,8);
+  ackMsg[0] = 0x00;
+  ackMsg[1] = 0x00;
+  ackMsg[2] = 0x00;        
+  ackMsg[3] = 0x00;
+  ackMsg[4] = MSG_ACTION;
+  ackMsg[5] = 90;          
+  ackMsg[6] = 0x00;
+  ackMsg[7] = 0;          // ok for 0
 
-//} 
+  int angle = 0;
+  int dist = 0;
+  int speed = 0;
+  while(true)
+  {
+    until (getMessage (msg))
+    {
+       Wait (100); 
+    }
+    if(msg[4] == 1)  //action message
+    {
+      sendMessage(ackMsg);
+      angle = msg[5];
+      dist = msg[7];  // needs to transform
+      speed = msg[8];
+      angle = angle - d;
+      RotateMotorEx(OUT_AC, 50, angle, -100, true, true);
+
+      RotateMotor(OUT_AC, speed, dist);
+    }
+    else
+    {
+      //haha!
+    }
+  }
+} 
 
 task main()
 {

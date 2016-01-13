@@ -4,6 +4,11 @@ This repository is for the project of Operating System course.
 Website: http://lockdown-eurecom.weebly.com/
 Github:  https://github.com/gq17/legoRobot
 
+related websites:
+course link: http://soc.eurecom.fr/OS/projects_fall2015.html
+Communication protocol: https://gitlab.eurecom.fr/ludovic.apvrille/os_robot_project_fall2015
+lego tutorial: http://doc.ubuntu-fr.org/lego_mindstorms_nxt_sur_ubuntu
+
 --------------------------------------------------------------------
 The color sensor can only detect color within 3 centimeters:
 The ultrasonic sensor works within 23 centimeters. The reading is in chaos outside this distance.

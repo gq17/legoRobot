@@ -54,7 +54,8 @@ int y = 0;
 int d = 90;
 
 inline void Send_Msg_Ack()
-{
+{ 
+  int i=0;
   byte actionMsg[];
   ArrayInit(actionMsg, 0, 10);
   actionMsg[0] = 0x00;
@@ -71,10 +72,25 @@ inline void Send_Msg_Ack()
   actionMsg[8] = 20;          // speed 20mm/s
   actionMsg[9] = 0x00;
 
-  sendMessage (actionMsg);
-
-  Wait(1000);
-
+  byte ackMsg[];
+  while(true)
+  {
+    sendMessage (actionMsg);
+    i = 0;
+    while(!getMessage(ackMsg))
+    {
+      Wait(100);
+      i++;
+      if (i > 10)
+      {
+         break;
+      }
+    }
+    if(ackMsg[4] == MSG_ACK)
+    {
+      break;
+    }
+  }
 }
 
 inline void Turn_RightNinety()
@@ -110,7 +126,7 @@ inline void Go_Back(int i)
 {
   repeat(i)
   {
-    Turn_LeftThirty();
+    Turn_RightThirty();
   }
   // start go back
   if(d == 0)
