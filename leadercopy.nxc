@@ -1,0 +1,230 @@
+#define fois_forward 5
+#define fois_circle  12
+
+#define reposer Wait(500);
+
+#define SEARCH 23
+
+#define Turn_LeftNinety()  RotateMotorEx(OUT_AC, 50, 295, 100, true, true);  d = (d + 90) % 360;
+#define Turn_RightNinety() RotateMotorEx(OUT_AC, 50, 300, -100, true, true); d = (d - 90) % 360;
+#define Forward_Forty()    RotateMotor(OUT_AC, 50, 1800);
+#define Turn_RightThirty() RotateMotorEx(OUT_AC, 50, 120, -100, true, true);  d = (d - 30) % 360;
+
+//current location and direction of the robot
+int x = 0;
+int y = 0;
+int d = 90;
+
+void Go_Back(int i)
+{
+  repeat(i)
+  {
+    Turn_RightThirty();
+  }
+  if(d == 0)
+  {
+    Turn_RightNinety();
+    Turn_RightNinety();
+  } else if(d == 90)
+  {
+    Turn_LeftNinety();
+  } else if(d == 270)
+  {
+    Turn_RightNinety();
+  }
+  repeat(y)
+  {
+    Forward_Forty();
+  }
+
+  if(x<=0)
+  {
+    Turn_LeftNinety();
+    repeat(-x){
+      Forward_Forty();
+    }
+  }else
+  {
+    Turn_RightNinety();
+    repeat(x)
+    {
+      Forward_Forty();
+    }
+  }
+  while(true)
+  {
+    TextOut(20, LCD_LINE3, "return!");   
+  }
+}
+
+
+void Turn_RightThirty_Check(int m, int i)
+{
+  if(SensorUS(IN_4) <= SEARCH)
+  {
+    RotateMotor(OUT_AC, 30, 720); // go to check the ball
+    OnRev(OUT_B, 20);//do not release the motor
+    Wait(3000);
+    if(SENSOR_3 == 5)
+    {
+      RotateMotor(OUT_AC, 30, -720); //return
+      Go_Back(m-i);
+    }
+    else
+    {
+      OnFwd(OUT_B, 20);
+      Wait(3000);
+      Off(OUT_B);
+      RotateMotor(OUT_AC, 30, -720); //return
+    }
+  }
+  RotateMotorEx(OUT_AC, 50, 115, -100, true, true);
+  d = (d - 30) % 360;
+  NumOut(0, LCD_LINE4, d);
+  reposer;  
+}
+
+task MovLead()
+{
+  int i = 0;
+ 
+  while(true)
+  {
+    //(0,0,90)
+    reposer; 
+    repeat(fois_forward)
+    {                         
+      Forward_Forty();  //forward one step
+      y++;
+  
+      i = 0;
+      repeat(fois_circle)
+      {       
+        Turn_RightThirty_Check(fois_circle, i);
+        i++; 
+      }
+    }
+  
+    //(0,350,90)
+    reposer;
+    Turn_RightNinety();
+    Forward_Forty();
+    x++;
+    i = 0;
+    repeat(fois_circle)
+    {
+      Turn_RightThirty_Check(fois_circle, i);
+      i++;
+    }
+    Turn_RightNinety();
+
+    //(40, 350, 270)
+    reposer;
+    repeat(fois_forward)
+    {                           
+      Forward_Forty(); 
+      y--;
+
+      i = 0;
+      repeat(fois_circle)
+      {        
+        Turn_RightThirty_Check(fois_circle, i);
+        i++;
+      }
+    }
+  
+    //(40, 0 270)
+    reposer;
+    Turn_RightNinety();
+    Forward_Forty();
+    x--;
+    Forward_Forty();
+    x--;
+    i = 0;
+    repeat(fois_circle)
+    {
+      Turn_RightThirty_Check(fois_circle, i);
+      i++;
+    }
+    Turn_RightNinety();
+
+    //(-40, 0, 90)
+    reposer;
+    repeat(fois_forward)
+    {
+      Forward_Forty();  
+      y++;
+
+      i = 0;
+      repeat(fois_circle)
+      {       
+        Turn_RightThirty_Check(fois_circle, i);
+        i++;
+      }
+    }
+
+    //(-40, 350, 90)
+    reposer;
+    Turn_RightNinety();
+    Forward_Forty();
+    x++;
+    repeat(fois_circle)
+    {
+      Turn_RightThirty_Check(fois_circle, i);
+      i++;
+    }
+    Turn_RightThirty();
+
+    //(0, 350, 270)
+    reposer;
+    repeat(fois_forward)
+    {
+      Forward_Forty();
+      y--;
+
+      i = 0;
+      repeat(fois_circle)
+      {
+        Turn_RightThirty_Check(fois_circle, i);
+        i++;
+      }
+    }  
+    //back to (0,0,270)
+  }
+}
+
+//task MovFollow()
+//{
+
+//} 
+
+task main()
+{
+  //left motor:A  right motor: C center motor: B
+  //IN_1  IN_2 IN_3: color sensor IN_4: ultrasonic sensor
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+
+  //main code
+  //first receive the rank, to decide leader or follower
+  int r_rank = 1; //test:0 leader:1  follower: >1
+  if(r_rank == 0)
+  {
+     //RotateMotor(OUT_AC, 30, 720);
+     //RotateMotorEx(OUT_AC, 50, 295, -100, true, true);
+     repeat(12)
+     {
+       RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
+       Wait(500);
+     }
+  }
+  else if(r_rank == 1)
+  {
+    Precedes(MovLead);
+  }
+  else 
+  {
+   // Precedes(MovFollow);
+  }
+}
+

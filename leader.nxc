@@ -12,63 +12,126 @@
 #define fois_forward 5
 #define fois_circle  12
 
-#define reposer Wait(2000);
+#define reposer Wait(500);
 
 #define SEARCH 23
+
+#define forward_speed 50
+#define forward_distance 70 //cm
+
+#define Turn_LeftNinety()  RotateMotorEx(OUT_AC, 50, 295, 100, true, true);  d = (d - 90+360) % 360;
+#define Turn_RightNinety() RotateMotorEx(OUT_AC, 50, 300, -100, true, true); d = (d + 90) % 360;
+#define Forward_Forty()    RotateMotor(OUT_AC, forward_speed, 1800);
+#define Turn_RightThirty() RotateMotorEx(OUT_AC, 50, 120, -100, true, true);  d = (d + 30) % 360;
+
+byte previous = 0xFF;
+byte next = 0xFF;
+int  myID = 8;
+int  IDnum = 0;
+
+char getMessage (byte &msg[]) {
+    until (BluetoothStatus(CONNECTION) == NO_ERR);  // Wait for connection
+    string __msg;
+    char r = ReceiveMessage(0,1,__msg);
+    if (r != 0)
+        return 0;
+
+    ArrayInit(msg,0,59);
+    StrToByteArray (__msg, msg);
+    r = ArrayLen(msg);
+    if (r < 5)
+        return 0;
+
+    return r;
+}
+
+void sendMessage (byte msg[]) {
+    CommBTWriteType args2;
+    args2.Connection = CONNECTION;
+    args2.Buffer= ByteArrayToStr (msg);
+
+    SysCommBTWrite(args2);
+    TextOut(0, LCD_LINE2,       "Trying to write");
+    while (BluetoothStatus (CONNECTION) == STAT_COMM_PENDING)
+        Wait (10);
+
+    if (BluetoothStatus (CONNECTION) == NO_ERR)
+        TextOut(0, LCD_LINE2,   "Write Done     ");
+    else
+        TextOut(0, LCD_LINE2,   "Write Failed   ");
+}
+
+
 
 //current location and direction of the robot
 int x = 0;
 int y = 0;
-int d = 90;
-int findFlag = 0;
+int d = 0;
 
-inline void Turn_RightNinety()
+void Send_Msg_Ack(int dist, int speed)
 {
-  RotateMotorEx(OUT_AC, 50, 295, -100, true, true);
-  d = (d - 90) % 360;
+  int i=0;
+  int j=0;
+  byte actionMsg[];
+  ArrayInit(actionMsg, 0, 10);
+  actionMsg[0] = IDnum;
+  actionMsg[1] = 0x00;
+  actionMsg[2] = myID;        // ID of the my team
+  actionMsg[3] = next;     // ID of the destination
+  actionMsg[4] = MSG_ACTION;
+
+  actionMsg[5] = d;          // angle
+  actionMsg[6] = 0x00;
+
+  actionMsg[7] = dist;          // distance
+
+  actionMsg[8] = speed;          // speed
+  actionMsg[9] = 0x00;
+
+  byte ackMsg[];
+  j = 0;
+  while(j<3)
+  {
+    sendMessage (actionMsg);
+    TextOut(0, LCD_LINE3,   "send msg");
+    i = 0;
+    while((!getMessage(ackMsg))&&(i<50))
+    {
+      Wait(100);
+      i++;
+    }
+    TextOut(0, LCD_LINE3,   "receive ack");
+    if((ackMsg[4] == MSG_ACK)&&(ackMsg[3] == myID))
+    {
+      break;
+    }
+    j++;
+  }
+  IDnum++;
 }
 
-inline void Turn_LeftNinety()
-{
-  RotateMotorEx(OUT_AC, 50, 295, 100, true, true);
-  d = (d + 90) % 360;
-}
 
-inline void Forward_Forty()
-{
-  RotateMotor(OUT_AC, 50, 1800);
-}
-
-inline void Turn_LeftThirty()
-{
-  RotateMotorEx(OUT_AC, 50, 99, 100, true, true);
-  d = (d + 30) % 360;
-}
-
-inline void Turn_RightThirty()
-{
-  RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
-  d = (d - 30) % 360;
-}
-
-inline void Go_Back(int i)
+void Go_Back(int i)
 {
   repeat(i)
   {
     Turn_RightThirty();
   }
-  // start go back
   if(d == 0)
   {
     Turn_RightNinety();
+    Turn_RightNinety();
   } else if(d == 90)
   {
-    Turn_LeftNinety();
+    Turn_RightNinety();
+  } else if(d == 270)
+  {
     Turn_LeftNinety();
   }
   repeat(y)
   {
     Forward_Forty();
+    Send_Msg_Ack(forward_distance, forward_speed);
   }
 
   if(x<=0)
@@ -76,6 +139,7 @@ inline void Go_Back(int i)
     Turn_LeftNinety();
     repeat(-x){
       Forward_Forty();
+      Send_Msg_Ack(forward_distance, forward_speed);
     }
   }else
   {
@@ -83,69 +147,64 @@ inline void Go_Back(int i)
     repeat(x)
     {
       Forward_Forty();
+      Send_Msg_Ack(forward_distance, forward_speed);
     }
   }
-}
+  byte leadMsg[];
+  ArrayInit(leadMsg, 0, 5);
+  leadMsg[0] = 0x00;
+  leadMsg[1] = 0x00;
+  leadMsg[2] = myID;        // ID of the my team
+  leadMsg[3] = next;     // ID of the destination
+  leadMsg[4] = 2;
 
-
-inline void  Turn_LeftThirty_Check(int m, int i)
-{
-  if(SensorUS(IN_4) <= SEARCH)
-  {
-    RotateMotor(OUT_AC, 30, 720); // go to check the ball
-    OnRev(OUT_B, 20);//do not release the motor
-    Wait(4000);
-    if(SENSOR_3 == 5)
-    {
-      findFlag = 1;
-      RotateMotor(OUT_AC, 30, -720); //return
-      Go_Back(m-i);
-    }
-    else
-    {
-      findFlag = 0;
-      RotateMotor(OUT_AC, 30, -720); //return
-    }
-  }
-  RotateMotorEx(OUT_AC, 50, 99, 100, true, true);
-  d = (d + 30) % 360; 
-}
-
-inline void Turn_RightThirty_Check(int m, int i)
-{
-  if(SensorUS(IN_4) <= SEARCH)
-  {
-    RotateMotor(OUT_AC, 30, 720); // go to check the ball
-    OnRev(OUT_B, 20);//do not release the motor
-    Wait(4000);
-    if(SENSOR_3 == 5)
-    {
-      findFlag = 1;
-      RotateMotor(OUT_AC, 30, -720); //return
-      Go_Back(m-i);
-    }
-    else
-    {
-      findFlag = 0;
-      RotateMotor(OUT_AC, 30, -720); //return
-    }
-  }
-  RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
-  d = (d - 30) % 360;  
-}
-
-task MovLead()
-{
-  int i = 0;
- 
+  sendMessage (leadMsg);
   while(true)
   {
-    //(0,0,90)
+    TextOut(20, LCD_LINE3, "return!");   
+  }
+}
+
+
+void Turn_RightThirty_Check(int m, int i)
+{
+  if(SensorUS(IN_4) <= SEARCH)
+  {
+    RotateMotor(OUT_AC, 15, 720); // go to check the ball
+    OnRev(OUT_B, 20);//do not release the motor
+    Wait(3000);
+    if(SENSOR_3 == 5)
+    {
+      RotateMotor(OUT_AC, 30, -720); //return
+      Go_Back(m-i);
+    }
+    else
+    {
+      OnFwd(OUT_B, 20);
+      Wait(3000);
+      Off(OUT_B);
+      RotateMotor(OUT_AC, 30, -720); //return
+    }
+  }
+  RotateMotorEx(OUT_AC, 50, 120, -100, true, true);
+  d = (d + 30) % 360;
+  NumOut(0, LCD_LINE4, d);
+  reposer;  
+}
+
+void MovLead()
+{
+  int i = 0;
+  TextOut(0, LCD_LINE7, "lead2 START 2"); 
+  while(true)
+  {
+    //(0,0,0)
     reposer; 
     repeat(fois_forward)
     {                         
       Forward_Forty();  //forward one step
       y++;
+      Send_Msg_Ack(forward_distance, forward_speed);
   
       i = 0;
       repeat(fois_circle)
@@ -155,24 +214,27 @@ task MovLead()
       }
     }
   
-    //(0,350,90)
+    //(0,350,0)
     reposer;
     Turn_RightNinety();
     Forward_Forty();
-    x--;
+    x++;
+    Send_Msg_Ack(forward_distance, forward_speed);
     i = 0;
-    repeat(fois_circle+3)
+    repeat(fois_circle)
     {
-      Turn_RightThirty_Check(fois_circle+3, i);
+      Turn_RightThirty_Check(fois_circle, i);
       i++;
     }
+    Turn_RightNinety();
 
-    //(40, 350, 270)
+    //(40, 350, 180)
     reposer;
     repeat(fois_forward)
     {                           
       Forward_Forty(); 
       y--;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -182,26 +244,31 @@ task MovLead()
       }
     }
   
-    //(40, 0 270)
+    //(40, 0 180)
     reposer;
     Turn_RightNinety();
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     Forward_Forty();
     x--;
+    Send_Msg_Ack(forward_distance, forward_speed);
     i = 0;
-    repeat(fois_circle+3)
+    repeat(fois_circle)
     {
-      Turn_RightThirty_Check(fois_circle+3, i);
+      Turn_RightThirty_Check(fois_circle, i);
       i++;
     }
+    Turn_RightNinety();
+    Send_Msg_Ack(0, 0);
 
-    //(-40, 0, 90)
+    //(-40, 0, 0)
     reposer;
     repeat(fois_forward)
     {
       Forward_Forty();  
       y++;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -211,23 +278,27 @@ task MovLead()
       }
     }
 
-    //(40, 350, 90)
+    //(-40, 350, 0)
     reposer;
     Turn_RightNinety();
     Forward_Forty();
-    x--;
-    repeat(fois_circle+3)
+    x++;
+    Send_Msg_Ack(forward_distance, forward_speed);
+    repeat(fois_circle)
     {
-      Turn_RightThirty_Check(fois_circle+3, i);
+      Turn_RightThirty_Check(fois_circle, i);
       i++;
     }
+    Turn_RightThirty();
+    Send_Msg_Ack(0, 0);
 
-    //(0, 350, 270)
+    //(0, 350, 180)
     reposer;
     repeat(fois_forward)
     {
       Forward_Forty();
       y--;
+      Send_Msg_Ack(forward_distance, forward_speed);
 
       i = 0;
       repeat(fois_circle)
@@ -236,14 +307,66 @@ task MovLead()
         i++;
       }
     }  
-    //back to (0,0,270)
+    //back to (0,0,180)
   }
 }
 
-//task MovFollow()
-//{
+void MovFollow()
+{
+  byte msg[];
 
-//} 
+  byte ackMsg[];
+  ArrayInit(ackMsg,0,8);
+  ackMsg[0] = IDnum;
+  ackMsg[1] = 0x00;
+  ackMsg[2] = myID;
+  ackMsg[3] = previous; //
+  ackMsg[4] = MSG_ACK;
+  ackMsg[5] = 90;
+  ackMsg[6] = 0x00;
+  ackMsg[7] = 0;          // ok for 0
+
+  int angle = 0;
+  int dist = 0;
+  int speed = 0;
+  while(true)
+  {
+    until (getMessage (msg))
+    {
+       Wait (100);
+    }
+    if(msg[4] == 0)  //action message
+    {
+      TextOut(0, LCD_LINE2, "Receive Success!  ");
+
+      angle = msg[5];
+      dist = msg[7];  // needs to transform
+      speed = msg[8];
+      dist = dist*1800/60;
+      NumOut(0, LCD_LINE1, (angle-d+360)%360);
+      angle = (((angle - d+360)%360)*115.0)/30;
+      d = msg[5];
+      if(next != 0xFF)
+      {
+        Send_Msg_Ack(dist, speed);
+      }
+      
+      RotateMotorEx(OUT_AC, 50, angle, -100, true, true);
+      RotateMotor(OUT_AC, forward_speed, dist);
+   
+      ackMsg[5] = msg[0]; 
+      sendMessage(ackMsg);
+      IDnum++;
+    }
+    else if(msg[4] == 2)
+    {
+      //haha!
+      Wait(5000);
+      //Precedes(MovLead);
+      MovLead();
+    }
+  }
+} 
 
 task main()
 {
@@ -254,24 +377,68 @@ task main()
 
   //main code
   //first receive the rank, to decide leader or follower
-  int r_rank = 0; //test:0 leader:1  follower: >1
-  if(r_rank == 0)
+  
+  if (BluetoothStatus(CONNECTION) != NO_ERR)
+        StopAllTasks ();
+    else
+        TextOut(0, LCD_LINE1, "Conn Success!  ");
+
+    // Wait for START message
+    TextOut(0, LCD_LINE2,       "Waiting Msg...");
+    byte msg[];
+    until (getMessage (msg))
+        Wait (100);
+
+    NumOut(0, LCD_LINE3, msg[4]);
+    //byte previous = 0xFF;
+    //byte next = 0xFF;
+    byte rank = 0;
+    byte length = 0;
+
+    if (msg[4] == MSG_START) {
+        TextOut(0, LCD_LINE2,   "START !!!     ");
+        rank = msg[5];
+        length = msg[6];
+        previous = msg[7];
+        next = msg[8];
+    }
+
+    Wait (1000);
+  
+  //int r_rank = 1; //test:0 leader:1  follower: >1
+  NumOut(0, LCD_LINE4, rank);
+  NumOut(0, LCD_LINE5, msg[5]);
+  //Wait(5000);
+  if(rank == 0)
   {
-     //RotateMotor(OUT_AC, 30, 720);
-     //RotateMotorEx(OUT_AC, 50, 295, -100, true, true);
-     repeat(12)
-     {
-       RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
-       Wait(500);
-     }
-  }
-  else if(r_rank == 1)
-  {
-    Precedes(MovLead);
+    TextOut(0, LCD_LINE5, "lead START");
+    Send_Msg_Ack(120, forward_speed);
+    RotateMotor(OUT_AC, 30, 4075);
+    //Send_Msg_Ack(120, forward_speed);
+    Turn_RightNinety();
+    Send_Msg_Ack(0,0);
+    RotateMotor(OUT_AC, 20, 1360);
+    Send_Msg_Ack(40, forward_speed);
+    OnRev(OUT_B, 40);//do not release the motor
+    Wait(3000);
+    if(SENSOR_3 == 5)
+    {
+      Turn_RightNinety();
+      Send_Msg_Ack(0,0);
+      RotateMotor(OUT_AC, 30, 4075);
+      Send_Msg_Ack(120, forward_speed);
+      Turn_RightNinety();
+      Send_Msg_Ack(0,0);
+      RotateMotor(OUT_AC, 20, 1360);
+      Send_Msg_Ack(40, forward_speed);
+    }
+    //MovLead();
   }
   else 
   {
-   // Precedes(MovFollow);
-  }
+    //Precedes(MovFollow);
+    TextOut(0, LCD_LINE6, "follow start");
+    MovFollow();
+    }
 }
 

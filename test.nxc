@@ -1,0 +1,30 @@
+#define fois_forward 5
+#define fois_circle  12
+
+#define reposer Wait(500);
+
+#define SEARCH 23
+
+task main()
+{
+  //left motor:A  right motor: C center motor: B
+  //IN_1  IN_2 IN_3: color sensor IN_4: ultrasonic sensor
+  SetSensorColorFull(IN_3);
+  SetSensorUltrasonic(IN_4);
+
+  //main code
+  //first receive the rank, to decide leader or follower
+  int r_rank = 0; //test:0 leader:1  follower: >1
+  if(r_rank == 0)
+  {
+     RotateMotor(OUT_AC, 30, 1800);
+     //RotateMotorEx(OUT_AC, 50, 295, -100, true, true);
+     //repeat(3)
+     //{
+      // RotateMotorEx(OUT_AC, 50, 99, -100, true, true);
+      // Wait(500);
+      // RotateMotorEx(OUT_AC, 50, 99, 100, true, true);
+     //}
+  }
+}
+
