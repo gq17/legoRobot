@@ -17,12 +17,12 @@
 #define SEARCH 23
 
 #define forward_speed 50
-#define forward_distance 70 //cm
+#define forward_distance 60 //cm
 
-#define Turn_LeftNinety()  RotateMotorEx(OUT_AC, 50, 295, 100, true, true);  d = (d - 90+360) % 360;
-#define Turn_RightNinety() RotateMotorEx(OUT_AC, 50, 300, -100, true, true); d = (d + 90) % 360;
-#define Forward_Forty()    RotateMotor(OUT_AC, forward_speed, 1800);
-#define Turn_RightThirty() RotateMotorEx(OUT_AC, 50, 120, -100, true, true);  d = (d + 30) % 360;
+#define Turn_LeftNinety()  RotateMotorEx(OUT_AC, 50, 350, 100, true, true);  d = (d - 90+360) % 360;
+#define Turn_RightNinety() RotateMotorEx(OUT_AC, 50, 320, -100, true, true); d = (d + 90) % 360;
+#define Forward_Forty()    RotateMotor(OUT_AC, forward_speed, 2000);
+#define Turn_RightThirty() RotateMotorEx(OUT_AC, 50, 132, -100, true, true);  d = (d + 30) % 360;
 
 byte previous = 0xFF;
 byte next = 0xFF;
@@ -116,14 +116,22 @@ void Go_Back(int i)
   repeat(i)
   {
     Turn_RightThirty();
+    reposer;
   }
   if(d == 0)
   {
-    Turn_RightNinety();
-    Turn_RightNinety();
+    //Turn_RightNinety();
+    //Turn_RightNinety();
+    RotateMotorEx(OUT_AC, 50, 480, -100, true, true); 
+    d = (d + 90) % 360;
+    reposer;
+    RotateMotorEx(OUT_AC, 50, 480, -100, true, true); 
+    d = (d + 90) % 360;
   } else if(d == 90)
   {
-    Turn_RightNinety();
+    //Turn_RightNinety();
+    RotateMotorEx(OUT_AC, 50, 480, -100, true, true);
+    d = (d + 90) % 360;
   } else if(d == 270)
   {
     Turn_LeftNinety();
@@ -143,13 +151,16 @@ void Go_Back(int i)
     }
   }else
   {
-    Turn_RightNinety();
+    RotateMotorEx(OUT_AC, 50, 420, -100, true, true); 
+    d = (d + 90) % 360;
     repeat(x)
     {
       Forward_Forty();
       Send_Msg_Ack(forward_distance, forward_speed);
     }
   }
+
+  RotateMotor(OUT_AC, forward_speed, 600);
   byte leadMsg[];
   ArrayInit(leadMsg, 0, 5);
   leadMsg[0] = 0x00;
@@ -170,12 +181,12 @@ void Turn_RightThirty_Check(int m, int i)
 {
   if(SensorUS(IN_4) <= SEARCH)
   {
-    RotateMotor(OUT_AC, 15, 720); // go to check the ball
-    OnRev(OUT_B, 20);//do not release the motor
+    RotateMotor(OUT_AC, 15, 500); // go to check the ball
+    OnRev(OUT_B, 60);//do not release the motor
     Wait(3000);
     if(SENSOR_3 == 5)
     {
-      RotateMotor(OUT_AC, 30, -720); //return
+      RotateMotor(OUT_AC, 30, -500); //return
       Go_Back(m-i);
     }
     else
@@ -183,10 +194,10 @@ void Turn_RightThirty_Check(int m, int i)
       OnFwd(OUT_B, 20);
       Wait(3000);
       Off(OUT_B);
-      RotateMotor(OUT_AC, 30, -720); //return
+      RotateMotor(OUT_AC, 30, -500); //return
     }
   }
-  RotateMotorEx(OUT_AC, 50, 120, -100, true, true);
+  RotateMotorEx(OUT_AC, 50, 119, -100, true, true);
   d = (d + 30) % 360;
   NumOut(0, LCD_LINE4, d);
   reposer;  
@@ -412,27 +423,27 @@ task main()
   if(rank == 0)
   {
     TextOut(0, LCD_LINE5, "lead START");
-    Send_Msg_Ack(120, forward_speed);
-    RotateMotor(OUT_AC, 30, 4075);
     //Send_Msg_Ack(120, forward_speed);
-    Turn_RightNinety();
-    Send_Msg_Ack(0,0);
-    RotateMotor(OUT_AC, 20, 1360);
-    Send_Msg_Ack(40, forward_speed);
-    OnRev(OUT_B, 40);//do not release the motor
-    Wait(3000);
-    if(SENSOR_3 == 5)
-    {
-      Turn_RightNinety();
-      Send_Msg_Ack(0,0);
-      RotateMotor(OUT_AC, 30, 4075);
-      Send_Msg_Ack(120, forward_speed);
-      Turn_RightNinety();
-      Send_Msg_Ack(0,0);
-      RotateMotor(OUT_AC, 20, 1360);
-      Send_Msg_Ack(40, forward_speed);
-    }
-    //MovLead();
+    //RotateMotor(OUT_AC, 30, 4075);
+    //Send_Msg_Ack(120, forward_speed);
+    //Turn_RightNinety();
+    //Send_Msg_Ack(0,0);
+    //RotateMotor(OUT_AC, 20, 1360);
+    //Send_Msg_Ack(40, forward_speed);
+    //OnRev(OUT_B, 40);//do not release the motor
+    //Wait(3000);
+    //if(SENSOR_3 == 5)
+    //{
+      //Turn_RightNinety();
+      //Send_Msg_Ack(0,0);
+      //RotateMotor(OUT_AC, 30, 4075);
+      //Send_Msg_Ack(120, forward_speed);
+      //Turn_RightNinety();
+      //Send_Msg_Ack(0,0);
+      //RotateMotor(OUT_AC, 20, 1360);
+      //Send_Msg_Ack(40, forward_speed);
+    //}
+    MovLead();
   }
   else 
   {
