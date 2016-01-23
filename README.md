@@ -71,11 +71,3 @@ The forwarding and turning process are not as accruate as we think. We notice th
 We make every move a module. Like forwarding 45 cm, turn 30 degrees, turn 90 degrees, then call them inside the main function, so the error is controlled. We also make compensation between them, so at last we could go back, not exactly the same place but very near, within 20 cm.
 
 
-
-
-
-
-
-
--------------------------------------------------------------
-Final version--totally modulized
